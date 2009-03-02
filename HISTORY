@@ -1,0 +1,9 @@
+###############################################################################
+# HISTORY
+###############################################################################
+
+Version 3.00  2009-03-02
+   Initial release. Most of the functionality comes from the
+      Data::NDS::Multisource module.
+
+Version 3.01

@@ -89,6 +89,10 @@ METHODS
         in data consisting of lists. Add any non-digit character to them to
         avoid this problem.
 
+        All file calls must be done immediately after the object is created,
+        and before any other operations (including default_element
+        oeprations).
+
     nme
            $NME = $obj->nme(LABEL);
 
@@ -101,17 +105,25 @@ METHODS
         if the element does not exist.
 
     default_element
-           $obj->default_element([$label,] [$ele,] [$ruleset,] [$path,$val,...]);
+           $obj->default_element($label [,$ruleset] [,$path,$val,...]);
+           $obj->default_element($ele   [,$ruleset] [,$path,$val,...]);
 
         This is used to declare that one of the elements that was read in
         from one of the data file is used to provide defaults for other
         elements in that same data file.
 
-        If the data files contains lists of elements, $label must be passed
-        in, but $ele is NOT passed in.
+        If the data files contains lists of elements, the first form is used
+        ($label must be passed in as the first argument). The first element
+        from the given file is used as a default.
 
-        If the data files contain hashes of elements, $ele is passed in, but
-        $label is NOT passed in.
+        If the data files contain hashes of elements, the second form is
+        used ($ele is passed in as the first argument). The named element
+        (in whichever file it occurs) is used as a default. It should be
+        noted that default elements must be uniquely named in a Multifile
+        object.
+
+        The default_element methods must be done immediately after the file
+        methods, and before any other operations.
 
     rename_ele
            $obj->rename_ele($ele,$newele);
@@ -128,7 +140,7 @@ METHODS
     add_ele
            $obj->add_ele([$label,] [$ele,] $nds [,$new]);
 
-        This adds a new element to the list. The new element is checked for
+        This adds a new element to a file. The new element is checked for
         validity, and then added. Note that the element is not actually
         stored in the data file. Use the save method to do that.
 
@@ -141,25 +153,21 @@ METHODS
         If the data files contain lists, there are three different ways to
         call this:
 
-           $obj->add_ele($nds [,$new]);
+           $obj->add_ele([$label,] $nds [,$new]);
 
-        This adds the element to the end of the last data file.
+        This adds the element to the end of the given file, or the last data
+        file if $label is not included.
 
            $obj->add_ele($ele,$nds [,$new]);
 
         This inserts the new element at $ele (which must refer to an
         existing element) in the same data file as $ele.
 
-           $obj->add_ele($label,$nds [,$new]);
-
-        This inserts the element at the end of the list contained in the
-        given file label.
-
         If the data file contains a hash, there is only one way to call it:
 
            $obj->add_ele([$label,] $ele,$nds [,$new]);
 
-        If $label is given, it is inserted into the last data file.
+        If $label is not given, it is inserted into the last data file.
         Otherwise, it is inserted into the file specifed by $label.
 
     copy_ele
@@ -192,6 +200,10 @@ METHODS
         These work the same as in the Data::NDS::Multiele module and are
         fully documented in that module.
 
+    Any method not documented here, especially those beginning with an
+    underscore (_), are for internal use only. Please do not use them.
+    Absolutely no support is offered for them.
+
 ERROR CODES
     Each error code produced by a method in the Data::NDS::Multifile module
     is prefixed by the characters "nmf", followed by a 3 character operation
@@ -200,7 +212,7 @@ ERROR CODES
     The following error codes are used to identify problems working with
     files containing data:
 
-       nmffil01   An even number of arguements required to
+       nmffil01   An even number of arguments required to
                   specify files.
        nmffil02   An attempt to reuse a file label already in use.
        nmffil03   An error occurred reading the data file.
@@ -208,6 +220,11 @@ ERROR CODES
                   or hash).
        nmffil05   A data element is duplicated in 2 files.
        nmffil06   An invalid file label was used.
+       nmffil07   An attempt to read in a file after element
+                  operations have been done.
+       nmffil08   No file has been set.
+       nmffil09   Defaults must be set immediately after the files
+                  are read in.
 
     The following error codes identify problems accessing an element:
 
@@ -215,6 +232,33 @@ ERROR CODES
        nmfele02   Attempt to overwrite an existing element.
        nmfele03   When accessing a hash element, a name must be given.
        nmfele04   When adding an element, a name must be given.
+
+BUGS AND QUESTIONS
+    If you find a bug in this module, please send it directly to me (see the
+    AUTHOR section below). Alternately, you can submit it on CPAN. This can
+    be done at the following URL:
+
+       http://rt.cpan.org/Public/Dist/Display.html?Name=Data-NDS-Multifile
+
+    Please do not use other means to report bugs (such as usenet newsgroups,
+    or forums for a specific OS or linux distribution) as it is impossible
+    for me to keep up with all of them.
+
+    When filing a bug report, please include the following information:
+
+    *   The version of the module you are using. You can get this by using
+        the script:
+
+                use Data::NDS::Multifile;
+                $obj = new Data::NDS::Multifile;
+                print $obj->version(),"\n";
+
+    *   The output from "perl -V"
+
+    If you have a problem using the module that perhaps isn't a bug (can't
+    figure out the syntax, etc.), you're in the right place. Go right back
+    to the top of this manual and start reading. If this still doesn't
+    answer your question, mail me directly.
 
 KNOWN PROBLEMS
     None at this point.

@@ -6,4 +6,15 @@ Version 3.00  2009-03-02
    Initial release. Most of the functionality comes from the
       Data::NDS::Multisource module.
 
-Version 3.01
+Version 3.10  2009-04-14
+   Cleaned up some of the internals.
+
+###############################################################################
+# BACKWARDS INCOMPATIBILITIES
+###############################################################################
+
+Version 3.10
+   The API of the 3.10 series is backward compatible with 3.00, but
+   due to changes in the internals, the 3.10 Data::NDS module is
+   required for the 3.10 version of other Data::NDS::* modules.
+

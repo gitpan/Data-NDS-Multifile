@@ -11,9 +11,6 @@ package Data::NDS::Multifile;
 # TODO
 ###############################################################################
 
-# Add DESC files which store a complete description of the structure
-# (including path descriptions) which can be read in.
-
 ###############################################################################
 
 require 5.000;
@@ -25,7 +22,7 @@ use Data::NDS::Multiele;
 use Storable qw(dclone);
 
 use vars qw($VERSION);
-$VERSION = "3.00";
+$VERSION = "3.10";
 
 ###############################################################################
 # BASE METHODS
@@ -71,18 +68,18 @@ sub new {
    my @file = @args;
 
    my $self = {
-               "nds"       => $NDS, # Data::NDS object
-               "file"      => {},   # LABEL => Data::NDS::Multiele
-               "labels"    => [],   # The order the labels are read in
-               "list"      => "",   # 1 if data is a list
+               "nds"       => $NDS,  # Data::NDS object
+               "file"      => undef, # LABEL => Data::NDS::Multiele
+               "labels"    => [],    # The order the labels are read in
+               "list"      => "",    # 1 if data is a list
                "err"       => "",
                "errmsg"    => "",
-               "elesx"     => [],   # Existing elements
-               "elesn"     => [],   # Non-empty elements
-               "eles"      => {},   # [ LABEL, FILE_ELE ]
-                                    # Which file an element is in, and
-                                    # the element in that file (this
-                                    # differs for lists)
+               "elesx"     => undef, # Existing elements
+               "elesn"     => undef, # Non-empty elements
+               "eles"      => {},    # [ LABEL, FILE_ELE ]
+                                     # Which file an element is in, and
+                                     # the element in that file (this
+                                     # differs for lists)
               };
    bless $self, $class;
 
@@ -136,9 +133,19 @@ sub file {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
-   if ($#args == 0) {
+   if (defined $$self{"elesx"}) {
+      $$self{"err"}    = "nmffil07";
+      $$self{"errmsg"} = "An attempt to read in a file after element operations " .
+        "have been done";
+      return;
+   }
+
+   $$self{"file"} = {}  if (! defined $$self{"file"});
+
+   if ($#args == 0  ||
+       $#args % 2 == 0) {
       $$self{"err"}    = "nmffil01";
-      $$self{"errmsg"} = "An even number of arguements required to specify " .
+      $$self{"errmsg"} = "An even number of arguments required to specify " .
         "files";
       return;
    }
@@ -179,75 +186,114 @@ sub file {
          return;
       }
 
-      # Add elements to "eles" hash
+      # Save the label
 
       $$self{"file"}{$label} = $obj;
       push(@{ $$self{"labels"} },$label);
-   }
 
-   _eles($self);
+      my $err = _eles_label($self,$label);
+      return  if ($err);
+   }
 }
 
 ###############################################################################
 # ELEMENT EXISTANCE METHODS
 ###############################################################################
 
-sub _eles {
-   my($self) = @_;
+# Get the elements that are in a given label (that is being read in).
+#
+sub _eles_label {
+   my($self,$label) = @_;
 
-   $$self{"elesx"} = [];
-   $$self{"elesn"} = [];
-   $$self{"eles"}  = {};
+   my $NME = $$self{"file"}{$label};
 
-   foreach my $label (@{ $$self{"labels"} }) {
-      my $NME = $$self{"file"}{$label};
+   my @elesx = $NME->eles(1);
+   if ($NME->err()) {
+      $$self{"err"}    = $NME->err();
+      $$self{"errmsg"} = $NME->errmsg() . ": $label";
+      return 1;
+   }
 
-      my @elesx = $NME->eles(1);
-      if ($NME->err()) {
-         $$self{"err"}    = $NME->err();
-         $$self{"errmsg"} = $NME->errmsg() . ": $label";
-         $$self{"elesx"} = [];
-         $$self{"elesn"} = [];
-         $$self{"eles"}  = {};
-         return undef;
-      }
-      my @elesn = $NME->eles();
-
-      if ($$self{"list"}) {
-         my $n = $#{ $$self{"elesx"} };
-         foreach my $ele (@elesx) {
-            my $i = $ele + $n + 1;
-            $$self{"eles"}{$i} = [ $label, $ele ];
-            $$self{"elesx"}[$i] = $i;
-         }
-         foreach my $ele (@elesn) {
-            my $i = $ele + $n + 1;
-            push @{ $$self{"elesn"} },$i;
-         }
-
+   my $i0;
+   if ($$self{"list"}) {
+      my @tmp = CORE::keys %{ $$self{"eles"} };
+      if (@tmp) {
+         @tmp = sort { $a <=> $b } @tmp;
+         $i0  = pop(@tmp) + 1;
       } else {
-         push @{ $$self{"elesx"} },@elesx;
-         push @{ $$self{"elesn"} },@elesn;
-         foreach my $ele (@elesx) {
-            if (exists $$self{"eles"}{$ele}) {
-               my $l1           = $$self{"eles"}{$ele}[0];
-               $$self{"err"}    = "nmffil05";
-               $$self{"errmsg"} = "A data element is duplicated in 2 files: " .
-                 "$ele [$l1, $label]";
-               $$self{"elesx"}  = [];
-               $$self{"elesn"}  = [];
-               $$self{"eles"}   = {};
-               return;
-            }
-
-            $$self{"eles"}{$ele} = [ $label,$ele ];
-         }
+         $i0 = 0;
       }
    }
 
-   if (! $$self{"list"}) {
-      @{ $$self{"elesx"} } = sort @{ $$self{"elesx"} };
-      @{ $$self{"elesn"} } = sort @{ $$self{"elesn"} };
+   foreach my $ele (@elesx) {
+      my $e = $ele;
+      $e = $ele + $i0  if ($$self{"list"});
+
+      if (exists $$self{"eles"}{$e}) {
+         my $other        = $$self{"eles"}{$e}[0];
+         $$self{"err"}    = "nmffil05";
+         $$self{"errmsg"} = "A data element is duplicated in 2 files: " .
+           "$ele [$other, $label]";
+         return 1;
+      }
+
+      if ($$self{"list"}) {
+         $$self{"eles"}{$e} = [$label,$ele];
+      } else {
+         $$self{"eles"}{$e} = [ $label,$ele ];
+      }
+   }
+}
+
+# If $op is:
+#   ""       Get all the elements from all the labels.
+#   exists   Get all elements that exist
+#   nonempty Get all nonempty elements
+#
+sub _eles {
+   my($self,$op) = @_;
+   $op = ""  if (! $op);
+
+   if ($op eq "exists") {
+      return  if (defined $$self{"elesx"});
+      my @tmp = CORE::keys %{ $$self{"eles"} };
+      if ($$self{"list"}) {
+         $$self{"elesx"} = [ sort { $a <=> $b } @tmp ];
+      } else {
+         $$self{"elesx"} = [ sort @tmp ];
+      }
+
+   } elsif ($op eq "nonempty") {
+
+      if ($$self{"list"}) {
+         my @tmp;
+         my $n = 0;
+         foreach my $label (@{ $$self{"labels"} }) {
+            my $NME  = $$self{"file"}{$label};
+            my @tmp2 = $NME->eles();
+            push(@tmp,map { $_+$n } @tmp2);
+            @tmp2    = $NME->eles(1);
+            $n      += $#tmp2 + 1;
+         }
+         $$self{"elesn"} = [ @tmp ];
+
+      } else {
+         my @tmp;
+         foreach my $label (@{ $$self{"labels"} }) {
+            my $NME = $$self{"file"}{$label};
+            push(@tmp,$NME->eles());
+         }
+         $$self{"elesn"} = [ sort @tmp ];
+      }
+
+   } else {
+      $$self{"elesx"} = undef;
+      $$self{"elesn"} = undef;
+      $$self{"eles"}  = {};
+      foreach my $label (@{ $$self{"labels"} }) {
+         my $err = _eles_label($self,$label);
+         return  if ($err);
+      }
    }
 }
 
@@ -256,19 +302,17 @@ sub eles {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
-   if ($exists) {
-      return @{ $$self{"elesx"} }  if (@{ $$self{"elesx"} });
-   } else {
-      return @{ $$self{"elesn"} }  if (@{ $$self{"elesn"} });
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
    }
 
-   _eles($self);
-   return  if ($self->err());
-
    if ($exists) {
-      return @{ $$self{"elesx"} }  if (@{ $$self{"elesx"} });
+      _eles($self,"exists");
+      return @{ $$self{"elesx"} };
    } else {
-      return @{ $$self{"elesn"} }  if (@{ $$self{"elesn"} });
+      _eles($self,"nonempty");
+      return @{ $$self{"elesn"} };
    }
 }
 
@@ -277,7 +321,13 @@ sub ele {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    return 0  if (! exists $$self{"eles"}{$ele});
+   return 1  if ($exists);
 
    my($label,$fele) = @{ $$self{"eles"}{$ele} };
    my $NME          = $$self{"file"}{$label};
@@ -294,6 +344,11 @@ sub ele {
 
 sub ele_file {
    my($self,$ele) = @_;
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    if (! $self->ele($ele)) {
       $$self{"err"}    = "nmfele01";
@@ -327,6 +382,21 @@ sub default_element {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
+   # Any element which works with the data will have set "elesx", so if
+   # it is set, the operation fails.
+
+   if (defined $$self{"elesx"}) {
+      $$self{"err"}    = "nmedef09";
+      $$self{"errmsg"} = "Defaults must be set immediately after the filef " .
+                         "are read in.";
+      return;
+   }
+
    # Get the Multiele object containing the default.
 
    my $label;
@@ -356,7 +426,7 @@ sub default_element {
 
    my $NME = $$self{"file"}{$label};
 
-   # Handle the default, and then regenerate element lists.
+   # Handle the default.
 
    $NME->default_element(@args);
    if ($NME->err()) {
@@ -372,6 +442,11 @@ sub is_default_value {
    my($self,$ele,$path) = @_;
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    if (! $self->ele($ele,1)) {
       $$self{"err"}    = "nmfele01";
@@ -404,6 +479,11 @@ sub is_default_value {
 
 sub which {
    my($self,@cond)  = @_;
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    if ($$self{"list"}) {
       return _which_list($self,@cond);
@@ -473,6 +553,11 @@ sub value {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
    return undef  if ($self->err());
@@ -492,6 +577,11 @@ sub keys {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
    return undef  if ($self->err());
@@ -510,6 +600,11 @@ sub values {
    my($self,$ele,$path,@args) = @_;
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
@@ -533,6 +628,11 @@ sub path_values {
    my($self,@args) = @_;
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    my @ret;
 
@@ -572,6 +672,11 @@ sub delete_ele {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
    return undef  if ($self->err());
@@ -582,6 +687,7 @@ sub delete_ele {
       $$self{"errmsg"} = $NME->errmsg();
       return undef;
    }
+
    _eles($self);
    return;
 }
@@ -595,6 +701,11 @@ sub rename_ele {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
    return undef  if ($self->err());
@@ -605,6 +716,7 @@ sub rename_ele {
       $$self{"errmsg"} = $NME->errmsg();
       return undef;
    }
+
    _eles($self);
    return;
 }
@@ -615,6 +727,11 @@ sub rename_ele {
 
 sub add_ele {
    my($self,@args) = @_;
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    if ($$self{"list"}) {
       return _add_ele_list($self,@args);
@@ -704,6 +821,7 @@ sub _add_ele_list {
       $$self{"errmsg"} = $NME->errmsg();
       return undef;
    }
+
    _eles($self);
    return;
 }
@@ -718,6 +836,7 @@ sub _add_ele_hash {
       ($label,$ele,$nds,$new) = @args;
    } else {
       ($ele,$nds,$new) = @args;
+      $label = $$self{"labels"}[ $#{ $$self{"labels"} } ];
    }
 
    # Check each argument
@@ -728,7 +847,7 @@ sub _add_ele_hash {
       return undef;
    }
 
-   if ($label  &&  ! exists $$self{"file"}{$label}) {
+   if (! exists $$self{"file"}{$label}) {
       $$self{"err"}    = "nmffil06";
       $$self{"errmsg"} = "An invalid file label was used: $label";
       return undef;
@@ -748,8 +867,6 @@ sub _add_ele_hash {
 
    # Add the element
 
-   $label = $$self{"labels"}[ $#{ $$self{"labels"} } ]
-     if (! $label);
    my $NME = $$self{"file"}{$label};
    $NME->add_ele($ele,$nds);
 
@@ -758,6 +875,7 @@ sub _add_ele_hash {
       $$self{"errmsg"} = $NME->errmsg();
       return undef;
    }
+
    _eles($self);
    return;
 }
@@ -768,6 +886,11 @@ sub _add_ele_hash {
 
 sub copy_ele {
    my($self,$ele,@args) = @_;
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    # Check to make sure $ele is valid (it need only exist)
 
@@ -781,7 +904,7 @@ sub copy_ele {
 
    my $file = $self->ele_file($ele);
    my $NME  = (_ele_nme($self,$ele))[0];
-   my $nds  = dclone($NME->_nds($ele,1));
+   my $nds  = dclone($NME->_ele_nds($ele,1));
 
    if (! @args  ||  ! exists $$self{"file"}{$args[0]}) {
       # The first argument is not a label, so prepend the label of the
@@ -801,6 +924,11 @@ sub update_ele {
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
 
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
    return undef  if ($self->err());
@@ -811,6 +939,7 @@ sub update_ele {
       $$self{"errmsg"} = $NME->errmsg();
       return undef;
    }
+
    _eles($self);
    return;
 }
@@ -823,6 +952,11 @@ sub dump {
    my($self,$ele,@args) = @_;
    $$self{"err"}    = "";
    $$self{"errmsg"} = "";
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    my $NME;
    ($NME,$ele) = _ele_nme($self,$ele);
@@ -843,6 +977,11 @@ sub dump {
 
 sub save {
    my($self,$nobackup) = @_;
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
 
    while (my($label,$NME) = each %{ $$self{"file"} }) {
       $NME->save($nobackup);

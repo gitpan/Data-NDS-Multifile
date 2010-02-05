@@ -229,6 +229,8 @@ element.
 
 =item path_values
 
+=item path_in_use
+
 =item delete_ele
 
 =item update_ele

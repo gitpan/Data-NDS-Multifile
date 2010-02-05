@@ -1,5 +1,5 @@
 package Data::NDS::Multifile;
-# Copyright (c) 2007-2009 Sullivan Beck. All rights reserved.
+# Copyright (c) 2007-2010 Sullivan Beck. All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
 
@@ -22,7 +22,7 @@ use Data::NDS::Multiele;
 use Storable qw(dclone);
 
 use vars qw($VERSION);
-$VERSION = "3.10";
+$VERSION = "3.11";
 
 ###############################################################################
 # BASE METHODS
@@ -644,7 +644,7 @@ sub path_values {
       if ($NME->err()) {
          $$self{"err"}    = $NME->err();
          $$self{"errmsg"} = $NME->errmsg() . ": $label";
-         return undef;
+         return ();
       }
 
       if ($$self{"list"}) {
@@ -661,6 +661,39 @@ sub path_values {
    }
 
    return @ret;
+}
+
+###############################################################################
+# PATH_IN_USE METHOD
+###############################################################################
+
+sub path_in_use {
+   my($self,@args) = @_;
+   $$self{"err"}    = "";
+   $$self{"errmsg"} = "";
+
+   if (! defined $$self{"file"}) {
+      $$self{"err"}    = "nmffil08";
+      $$self{"errmsg"} = "No file set.";
+   }
+
+   my @ret;
+
+   my $prev         = 0;
+   foreach my $label (@{ $$self{"labels"} }) {
+      my $NME  = $$self{"file"}{$label};
+
+      my $flag = $NME->path_in_use(@args);
+      if ($NME->err()) {
+         $$self{"err"}    = $NME->err();
+         $$self{"errmsg"} = $NME->errmsg() . ": $label";
+         return undef;
+      }
+
+      return 1  if ($flag);
+   }
+
+   return 0;
 }
 
 ###############################################################################

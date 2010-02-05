@@ -1,6 +1,7 @@
 Build.PL
 examples/README.examples
 HISTORY
+INSTALL
 lib/Data/NDS/Multifile.pm
 lib/Data/NDS/Multifile.pod
 LICENSE
@@ -41,6 +42,7 @@ t/file.list.error.t
 t/file.list.t
 t/is_default_value.hash.t
 t/keys.t
+t/path_in_use.t
 t/path_valid.t
 t/path_values.hash.t
 t/path_values.list.t
@@ -48,6 +50,7 @@ t/pod.t
 t/pod_coverage.t
 t/rename_ele.hash.t
 t/runtests
+t/runtests.bat
 t/test.pl
 t/update_ele.t
 t/value.t

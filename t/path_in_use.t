@@ -20,22 +20,31 @@ use Data::NDS::Multifile;
 
 sub test {
   (@test)=@_;
-  @ele = $obj->eles();
-  $obj->rename_ele(@test);
-  @el2 = $obj->eles();
-  return (@ele,'--',@el2);
+  @val = $obj->path_in_use(@test);
+  $err = $obj->err();
+  return (@val,$err);
 }
 
 $obj = new Data::NDS::Multifile;
-$obj->file("FILE1","$tdir/DATA.file.hash.1.yaml",
-           "FILE2","$tdir/DATA.file.hash.2.yaml");
+$obj->file("FILE1","$tdir/DATA.data.1.yaml",
+           "FILE2","$tdir/DATA.data.2.yaml");
+$obj->default_element("def11","/usedef1","1");
+$obj->default_element("def21","/usedef2","1");
+$obj->default_element("def31","/usedef3","1");
+$obj->default_element("def12","/usedef1","1");
+$obj->default_element("def22","/usedef2","1");
+$obj->default_element("def32","/usedef3","1");
 
 $tests = "
-a x ~ a b c -- b c x
+
+/l1/0 ~ 1 _blank_
+
+/l1/1 ~ 0 _blank_
 
 ";
 
-print "rename_ele (hash)...\n";
+
+print "path_in_use...\n";
 test_Func(\&test,$tests,$runtests);
 
 1;

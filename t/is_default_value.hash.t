@@ -5,10 +5,12 @@ require 5.001;
 $runtests=shift(@ARGV);
 if ( -f "t/test.pl" ) {
   require "t/test.pl";
-  $dir="t";
+  $dir="./lib";
+  $tdir="t";
 } elsif ( -f "test.pl" ) {
   require "test.pl";
-  $dir=".";
+  $dir="../lib";
+  $tdir=".";
 } else {
   die "ERROR: cannot find test.pl\n";
 }
@@ -22,8 +24,8 @@ sub test {
 }
 
 $obj = new Data::NDS::Multifile;
-$obj->file("FILE1","$dir/DATA.def.hash.1.yaml",
-           "FILE2","$dir/DATA.def.hash.2.yaml");
+$obj->file("FILE1","$tdir/DATA.def.hash.1.yaml",
+           "FILE2","$tdir/DATA.def.hash.2.yaml");
 $obj->default_element("def11");
 $obj->default_element("def21");
 $obj->default_element("def31","/c","c4");

@@ -9,6 +9,12 @@ Version 3.00  2009-03-02
 Version 3.10  2009-04-14
    Cleaned up some of the internals.
 
+Version 3.11  2010-02-05
+   Added path_in_use method.
+   Minor bug fix in path_values.
+
+Version 3.12
+
 ###############################################################################
 # BACKWARDS INCOMPATIBILITIES
 ###############################################################################

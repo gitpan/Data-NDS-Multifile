@@ -192,6 +192,7 @@ METHODS
     keys
     values
     path_values
+    path_in_use
     delete_ele
     update_ele
     is_default_value

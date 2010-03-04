@@ -1,0 +1,25 @@
+After some discussion on the perl modules mailing list, I am renaming
+this module to:
+
+   Data::Nested::Multifile
+
+The original module name of the module was Data::NDS::Multifile . I
+tried to register Data::NDS under that name, but the maintainers of
+the module list felt that using an acronym (NDS) served to make the
+purpose of the module unclear.
+
+After some discussion, we agreed upon the name Data::Nested instead
+which should make it clear that this module works with nested data
+structures.
+
+Data::NDS::Multifile was based on Data::NDS, and it has been
+renamed to Data::Nested::Multfile to go along with the new Data::Nested
+module. In addition, I'm now bundling the Data::Nested modules
+together, so this module is included in the Data-Nested 3.12
+distibution.
+
+Switching from Data::NDS::Multifile to Data::Nested::Multifile is
+trivial since all of the methods remain unchanged. Simply change
+Data::NDS to Data::Nested everywhere it appears.  No other change
+should be required.
+

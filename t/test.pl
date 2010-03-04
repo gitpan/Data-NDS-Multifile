@@ -32,6 +32,8 @@
 # 2009-09-01  Added "-l" value to $runtests.
 #
 # 2009-09-30  Much better support for references.
+#
+# 2010-02-05  Fixed bug in passing tests as lists
 
 ###############################################################################
 
@@ -176,8 +178,10 @@ sub test_Func {
       die "ERROR: unknown argument(s): $runtests";
    }
 
+   my($tests_as_list) = 0;
    if (ref($tests) eq "ARRAY") {
-      @tests = @$tests;
+      @tests   = @$tests;
+      $tests_as_list = 1;
 
    } else {
       # Separate tests.
@@ -247,9 +251,14 @@ sub test_Func {
    foreach my $t (@t) {
       $::testnum  = $t;
 
-      my $arg     = dclone($tests[$t-1][0]);
-      my @arg     = @$arg;
-      print_to_vals(\@arg);
+      my (@arg);
+      if ($tests_as_list) {
+         @arg     = @{ $tests[$t-1][0] };
+      } else {
+         my $arg  = dclone($tests[$t-1][0]);
+         @arg     = @$arg;
+         print_to_vals(\@arg);
+      }
 
       my $argprt  = dclone(\@arg);
       my @argprt  = @$argprt;

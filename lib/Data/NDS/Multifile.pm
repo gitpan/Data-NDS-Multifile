@@ -18,11 +18,11 @@ use strict;
 use warnings;
 use YAML::Syck;
 use Data::NDS;
-use Data::NDS::Multiele;
+use Data::NDS::Multiele 3.11;
 use Storable qw(dclone);
 
 use vars qw($VERSION);
-$VERSION = "3.11";
+$VERSION = "3.12";
 
 ###############################################################################
 # BASE METHODS

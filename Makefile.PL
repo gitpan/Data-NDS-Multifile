@@ -16,7 +16,7 @@ my %requires = (
 
 WriteMakefile(
         NAME             => 'Data::NDS::Multifile',
-        VERSION          => '3.11',
+        VERSION          => '3.12',
         ($] >= 5.001
         ? (ABSTRACT=>'A multi-file version of Data::NDS::Multiele',
            AUTHOR  =>'Sullivan Beck (sbeck@cpan.org)')

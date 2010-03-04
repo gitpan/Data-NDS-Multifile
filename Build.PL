@@ -18,7 +18,7 @@ my %build_mods = (
 
 my $build = Module::Build->new(
         license            => 'perl',
-        dist_version       => '3.11',
+        dist_version       => '3.12',
         dist_author        => 'Sullivan Beck <sbeck@cpan.org>',
         module_name        => 'Data::NDS::Multifile',
         dist_abstract      => 'A multi-file version of Data::NDS::Multiele',

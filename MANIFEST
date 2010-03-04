@@ -8,6 +8,7 @@ LICENSE
 Makefile.PL
 MANIFEST			This list of files
 README
+README.FIRST
 t/add_ele.hash.t
 t/add_ele.list.t
 t/copy_hash.t

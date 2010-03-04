@@ -1,23 +1,25 @@
 ---
-name: Data-NDS-Multifile
-version: 3.11
+abstract: 'A multi-file version of Data::NDS::Multiele'
 author:
   - 'Sullivan Beck <sbeck@cpan.org>'
-abstract: A multi-file version of Data::NDS::Multiele
+configure_requires:
+  Module::Build: 0.36
+generated_by: 'Module::Build version 0.3603'
 license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Data-NDS-Multifile
+provides:
+  Data::NDS::Multifile:
+    file: lib/Data/NDS/Multifile.pm
+    version: 3.12
 requires:
   Data::NDS: 0
   Data::NDS::Multiele: 0
   Storable: 0
   YAML::Syck: 0
   perl: 5.001
-provides:
-  Data::NDS::Multifile:
-    file: lib/Data/NDS/Multifile.pm
-    version: 3.11
-generated_by: Module::Build version 0.280801
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+resources:
+  license: http://dev.perl.org/licenses/
+version: 3.12
